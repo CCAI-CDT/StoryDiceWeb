@@ -1,0 +1,2 @@
+# StoryDiceWeb
+web only version
