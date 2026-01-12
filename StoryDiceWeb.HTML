@@ -34,9 +34,9 @@
     };
 
     const colors = {
-      character: { bg: 'bg-purple-500', light: 'bg-purple-100', border: 'border-purple-400', text: 'text-purple-700' },
+      character: { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-700' },
       adjective: { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-700' },
-      tone: { bg: 'bg-amber-500', light: 'bg-amber-100', border: 'border-amber-400', text: 'text-amber-700' },
+      tone: { bg: 'bg-red-500', light: 'bg-red-100', border: 'border-red-400', text: 'text-red-700' },
       role: { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-400', text: 'text-green-700' }
     };
 
@@ -104,9 +104,24 @@
       const [story, setStory] = useState('');
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState('');
+      const [promptRecipe, setPromptRecipe] = useState('')
 
       const handleSelect = (type, value) => {
         setSelections(prev => ({ ...prev, [type]: value }));
+
+        // Clearing old story
+        setStory('')
+
+        // Update prompt recipe
+        // const selectionPlaceholders = {
+        //   character: selections.character ? '$character' : '', 
+        //   adjective: selections.adjective ? '$adjective' : '', 
+        //   tone: selections.tone ? '$tone' : '', 
+        //   role: selections.role ? '$role' : '',
+        // }
+        const prompt = buildPrompt(selections);
+        console.log(prompt);
+        setPromptRecipe('' + prompt);
       };
 
       const handleRoll = (type) => {
@@ -129,7 +144,7 @@
         });
       };
 
-      const buildPrompt = () => {
+      const buildPrompt = (selections) => {
         const { character, adjective, tone, role } = selections;
         const hasAny = character || adjective || tone || role;
         if (!hasAny) return null;
@@ -155,7 +170,7 @@
       };
 
       const generateStory = async () => {
-        const prompt = buildPrompt();
+        const prompt = buildPrompt(selections);
         if (!prompt) {
           setError('Please select at least one option!');
           return;
@@ -189,7 +204,7 @@
       const hasSelection = Object.values(selections).some(v => v);
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-500 via-cyan-300 to-cyan-50 p-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-6">
               <h1 className="text-4xl font-black text-white mb-2 drop-shadow-lg">
@@ -197,8 +212,8 @@
               </h1>
               <p className="text-xl text-purple-200">Learn the STAR Model of Prompt Engineering!</p>
               <div className="flex justify-center gap-2 mt-3 flex-wrap">
-                <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-bold">S = Specific</span>
-                <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-bold">T = Tone</span>
+                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">S = Specific</span>
+                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">T = Tone</span>
                 <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold">A = Audience (7-10)</span>
                 <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">R = Role</span>
               </div>
@@ -227,7 +242,7 @@
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 }`}
               >
-                {loading ? '✨ Creating...' : '🚀 GO!'}
+                {loading ? '✨ Creating...' : '▶️ GO!'}
               </button>
             </div>
 
@@ -238,7 +253,7 @@
                   {selections.role && <span className="bg-green-500 text-white px-3 py-1 rounded-full">{selections.role}</span>}
                   {selections.adjective && <span className="bg-blue-500 text-white px-3 py-1 rounded-full">{selections.adjective}</span>}
                   {selections.character && <span className="bg-purple-500 text-white px-3 py-1 rounded-full">{selections.character}</span>}
-                  {selections.tone && <span className="bg-amber-500 text-white px-3 py-1 rounded-full">{selections.tone}</span>}
+                  {selections.tone && <span className="bg-red-500 text-white px-3 py-1 rounded-full">{selections.tone}</span>}
                 </div>
               </div>
             )}
