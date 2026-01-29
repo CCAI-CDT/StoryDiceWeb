@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -17,7 +17,7 @@
   <div id="root"></div>
   
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
 
     const options = {
       character: ['Car', 'Alien', 'Astronaut', 'Dinosaur', 'Scientist', 'Dog'],
@@ -35,7 +35,7 @@
 
     const colors = {
       character: { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-700' },
-      adjective: { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-700' },
+      adjective: { bg: 'bg-yellow-500', light: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-black-700' },
       tone: { bg: 'bg-red-500', light: 'bg-red-100', border: 'border-red-400', text: 'text-red-700' },
       role: { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-400', text: 'text-green-700' }
     };
@@ -52,6 +52,7 @@
     const DiceSection = ({ type, selected, onSelect, onRoll, rolling }) => {
       const c = colors[type];
       const label = starLabels[type];
+
       
       return (
         <div className={`${c.light} rounded-2xl p-4 border-2 ${c.border}`}>
@@ -81,6 +82,7 @@
                     ? `${c.bg} text-white shadow-lg scale-105`
                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
                 }`}
+                data-action={type.toLowerCase() + '-' + opt.toLowerCase().replaceAll(' ', '_')}
               >
                 {opt}
               </button>
@@ -90,6 +92,7 @@
             <button
               onClick={() => onSelect(null)}
               className="mt-2 text-xs text-gray-500 hover:text-gray-700 underline"
+              data-action={type.toLowerCase() + '-' + 'clear'}
             >
               Clear selection
             </button>
@@ -98,6 +101,42 @@
       );
     };
 
+  const ReadAloudButton = ({ text }) => {
+    const [speaking, setSpeaking] = useState(false);
+
+     const handleSpeak = () => {
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9; 
+    utterance.pitch = 1.1; 
+    
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+
+    setSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  return (
+    <button
+      onClick={handleSpeak}
+      className={`mt-4 ml-2 px-4 py-2 rounded-xl font-bold transition-all ${
+        speaking 
+          ? 'bg-red-500 text-white hover:bg-red-600' 
+          : 'bg-green-500 text-white hover:bg-green-600'
+      }`}
+    >
+      {speaking ? '⏹️ Stop' : '🔊 Read Aloud'}
+    </button>
+  );
+};
+
+
     function AIStoryDice() {
       const [selections, setSelections] = useState({ character: null, adjective: null, tone: null, role: null });
       const [rolling, setRolling] = useState({});
@@ -105,6 +144,11 @@
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState('');
       const [promptRecipe, setPromptRecipe] = useState('')
+
+      // Start NFC
+      useEffect(() => {
+        runNfc();
+      }, []);
 
       const handleSelect = (type, value) => {
         setSelections(prev => ({ ...prev, [type]: value }));
@@ -278,6 +322,7 @@
                 >
                   🔄 Generate Another!
                 </button>
+                <ReadAloudButton text={story} />
               </div>
             )}
           </div>
@@ -286,6 +331,192 @@
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<AIStoryDice />);
+
+
+    // Log messages to console and, if present, a textarea
+function nfcLog(message) {
+    console.log(message);
+    const textarea = document.querySelector('textarea');
+    if (textarea) {
+        textarea.value += message + '\n';
+        textarea.scrollTop = textarea.scrollHeight;
+    }
+}
+
+// Handle NFC events
+function nfcEvent(event) {
+    // const cardEvent = {
+    //     source,     // Nfc
+    //     reader,     // string
+    //     id,         // string | ''
+    //     previousId, // string | ''
+    //     readers.    // { reader: id, ... }
+    // };
+
+    // Handle NFC events here
+    //nfcLog(`Event received - Reader: ${event.reader}, ID: ${event.id} - State: ${JSON.stringify(event.readers)} - ExclusiveState: ${JSON.stringify(event.exclusiveState)}`);
+
+    nfcLog(`${exclusives && event.notExclusive ? 'UNRECOGNIZED-' : ''}TAG: ${event.reader}, id=${event.id}`);
+
+    // nfcLog exclusive state changes
+    if (exclusives) {
+        const overview = {}
+        for (const [exclusiveId, state] of Object.entries(event.exclusiveState)) {
+            const stateValue = state.value ? state.value : '';
+            overview[exclusiveId] = stateValue;
+            if (state.changed) {    // 'new', 'removed'
+                nfcLog(`CHANGE: ${exclusiveId}=${stateValue} (reader=${state.reader} tag=${state.id} exclusive-index=${state.index} exclusive-value=${state.value})`);
+                // Handle an exclusive tag-group change for: exclusiveId = stateValue
+                if (!exclusiveId.startsWith('_')) {
+                  const actionId = exclusiveId.toLowerCase() + '-' + (stateValue ? stateValue.toLowerCase().replaceAll(' ', '_') : 'clear');
+                  const selector = '[data-action=' + actionId + ']';
+                  const element = document.querySelector(selector);
+                  if (!element) {
+                    console.error('ERROR: Did not find automation element: ' + selector);
+                  } else {
+                    element.click();
+                  }
+                }
+            }
+        }
+        nfcLog(`OVERVIEW: ${JSON.stringify(overview)}`);
+    }
+}
+
+// Mapping of group label to array of tag IDs -- matching events and current group index will be determined
+let exclusives = null;
+// Character: ['Car', 'Alien', 'Astronaut', 'Dinosaur', 'Scientist', 'Dog'],
+// Adjective: ['Magical', 'Smart', 'Brave', 'Friendly', 'Curious', 'Giant'],
+// Tone: ['Silly', 'Happy', 'Mysterious', 'Boring', 'Educational', 'Surprising'],
+// Role: ['A Toddler', 'Teacher', 'Scientist', 'Robot', 'News Reporter', 'Grandmother']
+exclusives ={
+    '_cards': { // for testing only
+      '981e37b7': '1',
+      '98231487': '2',
+      '983fd4b7': '3',
+      '98fd4597': '4',
+      '98f458c7': '5',
+    },
+    'Character': {
+      '397dde50': 'Car',
+      '397de240': 'Alien',
+      '397f4450': 'Astronaut',
+      '397ecee0': 'Dinosaur',
+      '12093a10': 'Scientist',
+      '12093c00': 'Dog',
+
+      '1208ee90': 'Car',
+      '1208f190': 'Alien',
+      '1208f660': 'Astronaut',
+      '1208f320': 'Dinosaur',
+      '1208f020': 'Scientist',
+      '1208f4c0': 'Dog',
+
+
+    },
+    
+    'Adjective': {
+      '12091dd0': 'Magical',
+      '12091f90': 'Smart',
+      '12091a40': 'Brave',
+      '12091bf0': 'Friendly',
+      '12092140': 'Curious',
+      '120918a0': 'Giant',
+
+      '1208fce0': 'Magical',
+      '1208ffe0': 'Smart',
+      '1208f7e0': 'Brave',
+      '1208f960': 'Friendly',
+      '1208fe60': 'Curious',
+      '1208fb30': 'Giant',
+
+
+
+    },
+    'Tone': {
+      '12093630': 'Silly',
+      '12093060': 'Happy',
+      '12093450': 'Mysterious',
+      '12093810': 'Boring',
+      '12092e80': 'Educational',
+      '12093230': 'Surprising',
+
+      '12090340': 'Silly',
+      '120904e0': 'Happy',
+      '12090850': 'Mysterious',
+      '12090690': 'Boring',
+      '120901a0': 'Educational',
+      '12090a10': 'Surprising',
+
+
+
+
+
+    },
+    'Role': {
+      '12092530': 'A Toddler',
+      '120928e0': 'Teacher',
+      '12092ca0': 'Scientist',
+      '12092320': 'Robot',
+      '12092710': 'News Reporter',
+      '12092aa0': 'Grandmother',
+
+      '12090f70': 'A Toddler',
+      '12090bd0': 'Teacher',
+      '120914b0': 'Scientist',
+      '120912e0': 'Robot',
+      '12090d80': 'News Reporter',
+      '120916c0': 'Grandmother',
+
+    },
+};
+
+// Dynamically load a script (so we can tweak the NFC server address if required)
+async function dynamicallyLoadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+        document.head.appendChild(script);
+    });
+}
+
+// Load the NFC script and start the NFC connection
+async function runNfc() {
+    try {
+        let protocolSecure = location.protocol === 'https:' ? 's' : '';
+        let hostname = location.hostname;
+        let port = location.port;
+
+        // Override the address of the NFC server
+        if (!hostname) {    // e.g. file: protocol
+            hostname = '127.0.0.1';  // 'localhost'
+        }
+        protocolSecure = '';    // force non-secure
+        port = 5001;
+
+        const scriptUrl = `http${protocolSecure}://${hostname}:${port}/nfc.js`;
+        const connectionString = `ws${protocolSecure}://${hostname}:${port}/ws`;
+
+        nfcLog(`NFC: Loading script from nfc-server.py at: ${scriptUrl}`);
+        await dynamicallyLoadScript(scriptUrl);
+
+        nfcLog(`NFC: Connecting to nfc-server.py at: ${scriptUrl}`);
+        const nfc = new Nfc(connectionString, nfcEvent, exclusives, nfcLog);
+        nfc.connect();
+    } catch (error) {
+        nfcLog(`NFC: Error - ${error.message}`);
+    }
+}
+
+
+
+
   </script>
 </body>
 </html>
+
+
+
+<!-- the RFID reader interface isnt in the code yet as we are waiting on the order and to see if the order is here in time for the Spotlight day-->
