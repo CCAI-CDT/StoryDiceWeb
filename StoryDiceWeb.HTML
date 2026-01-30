@@ -11,6 +11,16 @@
   <style>
     @keyframes pulse-go { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     .pulse-go { animation: pulse-go 1.5s ease-in-out infinite; }
+    .prompt {
+      background-color: grey;
+      border-radius: 0.5rem;
+      padding: 0.1rem 0.3rem;
+      color: white;
+    }
+    .character { background-color: #3b82f6; } /* blue-500 */
+    .adjective { background-color: #facc15; } /* yellow-500 */
+    .tone { background-color: #ef4444; } /* red-500 */
+    .role { background-color: #22c55e; } /* green-500 */
   </style>
 </head>
 <body>
@@ -199,28 +209,33 @@
         });
       };
 
-      const buildPrompt = (selections) => {
+      const buildPrompt = (selections, html) => {
         const { character, adjective, tone, role } = selections;
         const hasAny = character || adjective || tone || role;
         if (!hasAny) return null;
 
         let prompt = '';
-        if (role) prompt += `You are ${role.toLowerCase()} telling a story. `;
+        if (role) prompt += `You are <span class="prompt role">${role.toLowerCase()}</span> telling a story. `;
         else prompt += 'You are a storyteller. ';
         
         prompt += 'Write in exactly 3-4 sentences for children aged 7-10 about ';
         
-        if (adjective && character) prompt += `a ${adjective.toLowerCase()} ${character.toLowerCase()}. `;
-        else if (adjective) prompt += `something ${adjective.toLowerCase()}. `;
-        else if (character) prompt += `a ${character.toLowerCase()}. `;
+        if (adjective && character) prompt += `a <span class="prompt adjective">${adjective.toLowerCase()}</span> <span class="prompt character">${character.toLowerCase()}</span>. `;
+        else if (adjective) prompt += `something <span class="prompt adjective">${adjective.toLowerCase()}</span>. `;
+        else if (character) prompt += `a <span class="prompt character">${character.toLowerCase()}</span>. `;
         else prompt += 'an adventure. ';
         
-        if (tone) prompt += `Your story MUST be ${tone.toLowerCase()} - make sure the ${tone.toLowerCase()} feeling is very clear and obvious. `;
+        if (tone) prompt += `Your story MUST be <span class="prompt tone">${tone.toLowerCase()}</span> - make sure the <span class="prompt tone">${tone.toLowerCase()}</span> feeling is very clear and obvious. `;
         
         prompt += 'Use simple words';
-        if (role) prompt += ` and make your ${role.toLowerCase()} personality shine through in how you tell the story`;
+        if (role) prompt += ` and make your <span class="prompt role">${role.toLowerCase()}</span> personality shine through in how you tell the story`;
         prompt += '. Make this story completely different from any other story.';
         
+        if (!html) {
+          // Remove "<...>" spans
+          prompt = prompt.replace(/<[^>]+>/g, '');
+        }
+
         return prompt;
       };
 
@@ -291,7 +306,7 @@
                   <div className="md:col-span-2 bg-white/90 rounded-2xl p-4 shadow-lg">
                     <h3 className="font-bold text-gray-700 mb-2">📝 The Prompt We Send to the AI:</h3>
                     <div className="bg-gray-100 rounded-xl p-3 border-2 border-dashed border-gray-300">
-                      <p className="text-gray-800 font-mono text-sm">{buildPrompt(selections)}</p>
+                      <p className="text-gray-800 font-mono text-sm" dangerouslySetInnerHTML={{__html: buildPrompt(selections, true)}}></p>
                     </div>
                   </div>
                 )}
