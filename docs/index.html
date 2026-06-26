@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Story Dice - STAR Model</title>
+  <title>AI Story Dice</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -37,15 +37,15 @@
     };
 
     const starLabels = {
-      character: { letter: 'S', word: 'Specific', desc: 'Who is in your story?' },
-      adjective: { letter: 'S', word: 'Specific', desc: 'What are they like?' },
-      tone: { letter: 'T', word: 'Tone', desc: 'How does it feel?' },
-      role: { letter: 'R', word: 'Role', desc: 'Who tells the story?' }
+      character: { word: 'Character', desc: 'Who is in your story?' },
+      adjective: { word: 'Details', desc: 'What are they like?' },
+      tone: { word: 'Tone', desc: 'How does it feel?' },
+      role: { word: 'Role', desc: 'Who tells the story?' }
     };
 
     const colors = {
       character: { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-700' },
-      adjective: { bg: 'bg-yellow-500', light: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-black-700' },
+      adjective: { bg: 'bg-yellow-500', light: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-yellow-700' },
       tone: { bg: 'bg-red-500', light: 'bg-red-100', border: 'border-red-400', text: 'text-red-700' },
       role: { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-400', text: 'text-green-700' }
     };
@@ -69,9 +69,8 @@
       <div className={`${c.light} rounded-2xl p-4 border-2 ${c.border} h-fit`}>
         <div className="flex items-center justify-between mb-2">
           <span className={`${c.bg} text-white font-bold px-2 py-2 rounded-lg text-sm`}>
-            {label.letter} = {label.word}
+            {label.word}
           </span>
-          <span className={`${c.text} font-semibold capitalize text-sm`}>{type}</span>
         </div>
         <div className="text-center pb-6">
           <p className={`${c.text} text-3xl font-bold mb-4`}>{selected}</p>
@@ -93,9 +92,8 @@
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={`${c.bg} text-white font-bold px-2 py-2 rounded-lg text-sm`}>
-            {label.letter} = {label.word}
+            {label.word}
           </span>
-          <span className={`${c.text} font-semibold capitalize`}>{type}</span>
         </div>
         <button
           onClick={onRoll}
@@ -107,14 +105,14 @@
       </div>
       <p className={`${c.text} text-sm mb-2 opacity-75`}>{label.desc}</p>
       <div className="grid grid-cols-3 gap-2">
-        {options[type].map((opt) => (
+        {options[type].map((opt, index) => (
           <button
             key={opt}
             onClick={() => onSelect(opt)}
             className={`px-2 py-2 rounded-xl text-sm font-medium transition-all transform hover:scale-105 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200`}
             data-action={type.toLowerCase() + '-' + opt.toLowerCase().replaceAll(' ', '_')}
           >
-            {opt}
+            {index + 1}. {opt}
           </button>
         ))}
       </div>
@@ -312,13 +310,13 @@
               <h1 className="text-6xl font-black text-white mb-2 drop-shadow-lg">
                 🎲 AI Story Dice 🎲
               </h1>
-              <p className="text-xl text-white">Learn the STAR Model of Prompt Engineering!</p>
+              <p className="text-xl text-white">Learn how to work with AI!</p>
 
               <div className="flex justify-center gap-2 mt-3 flex-wrap">
-                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">S = Specific</span>
-                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">T = Tone</span>
-                <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">A = Audience (7-10)</span>
-                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">R = Role</span>
+                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">Character</span>
+                <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">Details</span>
+                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">Tone</span>
+                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">Role</span>
               </div>
             </div>
 
@@ -474,13 +472,8 @@ let exclusives = null;
 // Tone: ['Silly', 'Happy', 'Mysterious', 'Boring', 'Educational', 'Surprising'],
 // Role: ['A Toddler', 'Teacher', 'Scientist', 'Robot', 'News Reporter', 'Grandmother']
 exclusives ={
-    '_cards': { // for testing only
-      '981e37b7': '1',
-      '98231487': '2',
-      '983fd4b7': '3',
-      '98fd4597': '4',
-      '98f458c7': '5',
-    },
+
+    
     'Character': {
       '397dde50': 'Car',
       '397de240': 'Alien',

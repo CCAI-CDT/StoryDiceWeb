@@ -1,0 +1,6 @@
+.DS_Store
+_local
+nfc-poll
+usb-list
+__pycache__
+.venv

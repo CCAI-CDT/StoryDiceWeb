@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,">
+<title>NFC Test Page</title>
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+<h1>NFC Test Page</h1>
+<textarea readonly rows="20" cols="50"></textarea>
+<script>
+// Log messages to console and, if present, a textarea
+function nfcLog(message) {
+    console.log(message);
+    const textarea = document.querySelector('textarea');
+    if (textarea) {
+        textarea.value += message + '\n';
+        textarea.scrollTop = textarea.scrollHeight;
+    }
+}
+
+// Handle NFC events
+function nfcEvent(event) {
+    // const cardEvent = {
+    //     source,     // Nfc
+    //     reader,     // string
+    //     id,         // string | ''
+    //     previousId, // string | ''
+    //     readers.    // { reader: id, ... }
+    // };
+
+    // Handle NFC events here
+    //nfcLog(`Event received - Reader: ${event.reader}, ID: ${event.id} - State: ${JSON.stringify(event.readers)} - ExclusiveState: ${JSON.stringify(event.exclusiveState)}`);
+
+    nfcLog(`${exclusives && event.notExclusive ? 'UNRECOGNIZED-' : ''}TAG: ${event.reader}, id=${event.id}`);
+
+    // nfcLog exclusive state changes
+    if (exclusives) {
+        const overview = {}
+        for (const [exclusiveId, state] of Object.entries(event.exclusiveState)) {
+            const stateValue = state.value ? state.value : '';
+            overview[exclusiveId] = stateValue;
+            if (state.changed) {    // 'new', 'removed'
+                nfcLog(`CHANGE: ${exclusiveId}=${stateValue} (reader=${state.reader} tag=${state.id} exclusive-index=${state.index} exclusive-value=${state.value})`);
+                // TODO: Handle an exclusive tag-group change for: exclusiveId = stateValue
+                ;
+            }
+        }
+        nfcLog(`OVERVIEW: ${JSON.stringify(overview)}`);
+    }
+}
+
+// Mapping of group label to array of tag IDs -- matching events and current group index will be determined
+let exclusives = null;
+// TODO: Replace these mutually-exclusive tag groups
+exclusives ={
+    /*
+    'a': {
+        '397c8750': 'one', 
+        '397d7e40': 'two', 
+        '397c15a0': 'three', 
+        '397c8b50': 'four', 
+        '397d8240': 'five', 
+        '397ddae0': 'six', 
+        '397ecb70': 'seven', 
+        '397f40e0': 'eight', 
+        '397ddee0': 'nine', 
+    },
+    'b': {
+        '397ecf70': 'one', 
+        '397f44e0': 'two', 
+        '397de2d0': 'three', 
+        '397ed370': 'four', 
+        '397f48e0': 'five', 
+        '397de6c0': 'six', 
+        '397ed770': 'seven', 
+        '397f4ce0': 'eight', 
+        '397deac0': 'nine', 
+        '397edb60': 'ten', 
+    },
+    'c': {
+        '3de47263': 'one', 
+        '3de39d10': 'two', 
+        '3de3e4fb': 'three', 
+        '3de45ad8': 'four', 
+        '3de62dd3': 'five', 
+    },
+    'd': {
+        '98ea9ea7': 'one',
+        '98a14e87': 'two',
+        '9875e197': 'three',
+        '98953a97': 'four',
+        '98b342a7': 'five',
+    },
+    */
+    'cards': {
+        '981e37b7': '1',
+        '98231487': '2',
+        '983fd4b7': '3',
+        '98fd4597': '4',
+        '98f458c7': '5',
+    },
+    'character': {
+        '397dde50': 'car',
+        '397ecee0': 'dinosaur',
+        '397f4450': 'astronaut',
+        '397de240': 'alien',
+        '12093a10': 'scientist',
+        '12093c00': 'dog',
+    }
+
+};
+
+// Dynamically load a script (so we can tweak the NFC server address if required)
+async function dynamicallyLoadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+        document.head.appendChild(script);
+    });
+}
+
+// Load the NFC script and start the NFC connection
+async function runNfc() {
+    try {
+        let protocolSecure = location.protocol === 'https:' ? 's' : '';
+        let hostname = location.hostname;
+        let port = location.port;
+
+        // Override the address of the NFC server
+        if (!hostname) {    // e.g. file: protocol
+            hostname = '127.0.0.1';  // 'localhost'
+        }
+        protocolSecure = '';    // force non-secure
+        port = 5001;
+
+        const scriptUrl = `http${protocolSecure}://${hostname}:${port}/nfc.js`;
+        const connectionString = `ws${protocolSecure}://${hostname}:${port}/ws`;
+
+        nfcLog(`NFC: Loading script from nfc-server.py at: ${scriptUrl}`);
+        await dynamicallyLoadScript(scriptUrl);
+
+        nfcLog(`NFC: Connecting to nfc-server.py at: ${scriptUrl}`);
+        const nfc = new Nfc(connectionString, nfcEvent, exclusives, nfcLog);
+        nfc.connect();
+    } catch (error) {
+        nfcLog(`NFC: Error - ${error.message}`);
+    }
+}
+
+// Start NFC now
+runNfc()
+
+</script>
+</body>
+</html>
